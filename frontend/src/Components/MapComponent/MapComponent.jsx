@@ -1,20 +1,161 @@
+import proj4 from "proj4";
+import debounce from "lodash/debounce";
+import { Map as GoogleMap, AdvancedMarker, useMap} from "@vis.gl/react-google-maps";
+import { useState, useEffect, useRef } from "react";
+
 import "./MapComponent.css";
-import carIcon from "../../assets/car.png";
+
 import CarPin from "../CarPin/CarPin";
-import { Map, AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
-import { useState, useEffect } from "react";
+import CurrentLocationMarker from "../CurrentLocationMarker/CurrentLocationMarker";
+import AccuracyCircle from "../AccuracyCircle/AccuracyCircle";
+import VisibleSignsComponent from "../VisibleSigns/VisibleSigns";
+
+const KEY = import.meta.env.VITE_PARK_API_KEY;
 
 const MapComponent = ({ setShowSidebar, setPotentialParkData }) => {
   const [newMarker, setNewMarker] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
-  const [mapLoading, setMapLoading] = useState(true);
-  const [mapError, setMapError] = useState(false);
+  const [signs, setSigns] = useState(new Map());
+  const [accuracy, setAccuracy] = useState(null)
   const map = useMap();
+
+  const watchIdRef = useRef(null);
+  const bestAccuracyRef = useRef(Infinity);
+  const timeoutRef = useRef(null);
+
+  const hasAnimatedRef = useRef(false);
+
+  const GOOD_ACCURACY = 50;   
+  const MAX_WAIT_TIME = 8000;  
+
+  proj4.defs(
+  "EPSG:2263",
+  "+proj=lcc +lat_1=40.66666666666666 +lat_2=41.03333333333333 "+
+    "+lat_0=40.16666666666666 +lon_0=-74 +x_0=300000.0000000001 "+
+    "+y_0=0 +datum=NAD83 +units=us-ft +no_defs"
+);
+
+const convertLatLngToStatePlane = (lat, lng) => {
+  const [x, y] = proj4("EPSG:4326", "EPSG:2263", [lng, lat]);
+  return { x, y };
+};
+
+const convertToLatLng = (x, y) => {
+  if (
+    x == null || y == null ||
+    isNaN(Number(x)) || isNaN(Number(y))
+  ) {
+    console.warn("Invalid coordinates skipped:", x, y);
+    return null;
+  }
+  const [lng, lat] = proj4("EPSG:2263", "EPSG:4326", [Number(x), Number(y)]);
+  return { lat, lng };
+};
+
+async function fetchParkingSigns(appToken, whereClause) {
+  const url = `https://data.cityofnewyork.us/resource/nfid-uabd.json?$where=${encodeURIComponent(whereClause)}&$limit=5000`;
+  console.log(url)
+  const res = await fetch(
+    url,
+    {
+      headers: { "X-App-Token": appToken },
+    }
+  );
+
+  const data = await res.json();
+
+return data
+  .map(row => {
+    if (!row.sign_x_coord || !row.sign_y_coord) return
+    const coords = convertToLatLng(row.sign_x_coord, row.sign_y_coord);
+    if (!coords) return null;
+    let type = ""
+    if (row.sign_description.includes("BUS")){
+      type="bus"
+    }
+    if (row.sign_description.includes("SANITATION")){
+      type = "cleaning";
+    }
+    if (row.sign_description.includes("TRUCK LOADING")){
+      type = "truck";
+    }
+
+    if (row.sign_description.includes("HMP")){
+      type="metered"
+    }
+
+    if (row.sign_description.includes("NO PARKING ANYTIME") || row.sign_description.includes("NO STANDING ANYTIME")){
+      type="restricted"
+    }
+    return {
+      id: `${row.order_number},${row.sign_x_coord},${row.sign_y_coord}`,
+      type: type,
+      streets: `${row.from_street}, ${row.to_street}`,
+      text: row.sign_description,
+      coords
+    };
+  })
+  .filter(Boolean);
+}
+
+
+function debounce(fn, delay) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
+
+useEffect(() => {
+  if (!map) return;
+  const fetchSignsInViewport = async () => {
+    if (map.getZoom() < 16.5) {
+      return
+    };
+    const bounds = map.getBounds();
+    const ne = bounds.getNorthEast();
+    const sw = bounds.getSouthWest();
+
+    const neSP = convertLatLngToStatePlane(ne.lat(), ne.lng());
+    const swSP = convertLatLngToStatePlane(sw.lat(), sw.lng());
+    console.log((swSP.x).toFixed(3), (neSP.x).toFixed(3), (swSP.y).toFixed(3), (neSP.y).toFixed(3))
+
+    const whereClause = `
+    sign_x_coord >= ${(swSP.x).toFixed(3)} AND sign_x_coord <= ${(neSP.x).toFixed(3)} AND
+    sign_y_coord >= ${(swSP.y).toFixed(3)} AND sign_y_coord <= ${(neSP.y).toFixed(3)}
+    `;
+    fetchParkingSigns(KEY, whereClause).then((data) => {
+      setSigns((prevSigns)=>{
+          const updatedSignMap = new Map(prevSigns)
+          data.forEach((sign)=>{
+            updatedSignMap.set(sign.id, sign)
+          })
+          for (const [id, sign] of updatedSignMap){
+            if (!data.some(s => s.id === id)){
+              updatedSignMap.delete(id)
+            }
+          }
+          return updatedSignMap;
+      });
+    });
+  };
+
+  const debouncedFetch = debounce(fetchSignsInViewport, 500)
+
+  const listeners = [
+    map.addListener("bounds_changed", debouncedFetch),
+    map.addListener("zoom_changed", debouncedFetch)
+  ];
+
+  return () => listeners.forEach(l => l.remove());
+
+}, [map]);
+
+
 
   function smoothPanAndZoom(map, targetLatLng, targetZoom, duration) {
     const startLatLng = map.getCenter();
-    const startingLat = startLatLng.lat()
-    const startingLng = startLatLng.lng()
     const startZoom = map.getZoom();
     const startTime = performance.now();
 
@@ -44,38 +185,58 @@ const MapComponent = ({ setShowSidebar, setPotentialParkData }) => {
   }
 
   useEffect(() => {
-    if (!map) {
-      return;
-    }
-    const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
-    const successCallback = (position) => {
-      const currentLocation = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-      };
-      console.log(position.coords.accuracy)
-      if (position.coords.accuracy < 300) {
-        setUserLocation(currentLocation);
-        map.panTo(currentLocation);
-        map.setZoom(17);
+    if (!navigator.geolocation) return;
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        const { latitude, longitude, accuracy } = pos.coords;
+
+        if (accuracy < bestAccuracyRef.current) {
+          bestAccuracyRef.current = accuracy;
+          setAccuracy(accuracy);
+          setUserLocation({ lat: latitude, lng: longitude });
+        }
+
+        // Stop if we reached good accuracy
+        if (accuracy <= GOOD_ACCURACY) {
+          cleanup();
+        }
+      },
+      (err) => {
+        console.error("Geolocation error:", err);
+        cleanup();
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 20000,
       }
-    };
+    );
 
-    const errorCallback = (error) => {
-      console.error("Error getting user location:", error);
-    };
+    timeoutRef.current = setTimeout(() => {
+      cleanup();
+    }, MAX_WAIT_TIME);
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        successCallback,
-        errorCallback,
-        options
-      );
-    } else {
-      console.error("Geolocation is not supported by this browser.");
+    return cleanup;
+  }, [userLocation]);
+
+    useEffect(() => {
+    if (!map || !userLocation || hasAnimatedRef.current) return;
+
+    hasAnimatedRef.current = true; 
+
+    smoothPanAndZoom(map, userLocation, 13, 500);
+  }, [map, userLocation]);
+
+  function cleanup() {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
     }
-    setMapLoading(false);
-  }, [map]);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }
 
   const handleMapClick = (e) => {
     const lat = e.detail.latLng.lat;
@@ -89,7 +250,7 @@ const MapComponent = ({ setShowSidebar, setPotentialParkData }) => {
   };
 
   return (
-    <Map
+    <GoogleMap
       style={{ width: "100vw", height: "calc(100vh - 70px)" }}
       defaultCenter={{ lat: 40.739691, lng: -73.950848 }}
       defaultZoom={13}
@@ -111,8 +272,20 @@ const MapComponent = ({ setShowSidebar, setPotentialParkData }) => {
           <CarPin />
         </AdvancedMarker>
       )}
-      {userLocation && <AdvancedMarker position={userLocation} />}
-    </Map>
+      {userLocation && (<><AdvancedMarker position={userLocation}>
+        
+        <CurrentLocationMarker/>
+        </AdvancedMarker>
+         {accuracy && (
+            <AccuracyCircle center={userLocation} radius={accuracy}/>
+          )}
+
+        </>)}
+
+        <VisibleSignsComponent signs={signs}/>
+        
+      
+    </GoogleMap>
   );
 };
 

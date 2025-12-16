@@ -56,6 +56,34 @@ app.get('/api/map/address-from-coords/:coords', async(req, res)=> {
   }
 });
 
+// app.post("/parking", async (req, res) => {
+//   const { latitude, longitude } = req.body;
+//   const userId = req.user.sub; // from Cognito JWT
+
+//   await dynamo.put({
+//     TableName: "UserParking",
+//     Item: {
+//       userId,
+//       latitude,
+//       longitude,
+//       updatedAt: new Date().toISOString()
+//     }
+//   }).promise();
+
+//   res.sendStatus(200);
+// });
+
+// app.get("/parking", async (req, res) => {
+//   const userId = req.user.sub;
+
+//   const result = await dynamo.get({
+//     TableName: "UserParking",
+//     Key: { userId }
+//   }).promise();
+
+//   res.json(result.Item || null);
+// });
+
 // Add your other /api/... routes here
 
 /**

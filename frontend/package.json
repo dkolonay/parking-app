@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "proxy": "https://reohtprau7.execute-api.us-west-2.amazonaws.com",
+  "proxy": "https://pmiexhnze6.execute-api.us-west-2.amazonaws.com",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -13,7 +13,9 @@
   "dependencies": {
     "@vis.gl/react-google-maps": "^1.7.1",
     "axios": "^1.13.2",
+    "lodash": "^4.17.21",
     "oidc-client-ts": "^3.4.1",
+    "proj4": "^2.20.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-oidc-context": "^3.3.0",

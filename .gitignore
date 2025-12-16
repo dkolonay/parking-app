@@ -26,5 +26,8 @@ dist-ssr
 .aws-sam
 
 .env
+env.json
+.env.development
+.env.production
 
 /node_modules

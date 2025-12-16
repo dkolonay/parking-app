@@ -7,12 +7,10 @@ const Navbar = ({ auth }) => {
       //handle logout
       auth.removeUser()
       const clientId = "6f6rvbgju63b6kfst332maqli6";
-      const logoutUri = "http://localhost:5173";
+      const logoutUri = "https://easypark.cis4160.com";
       const cognitoDomain = "https://us-east-2x2v0zsvp3.auth.us-east-2.amazoncognito.com";
-      console.log("logout")
       window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
     } else {
-      console.log("test")
       auth.signinRedirect()
     }
   };

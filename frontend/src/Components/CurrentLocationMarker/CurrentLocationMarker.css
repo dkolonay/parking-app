@@ -1,8 +1,3 @@
-gmp-map{
-    height: calc(100vh - 70px); 
-    width: 100vw;
-}
-
 .current-location-marker {
   position: relative;
   width: 20px;
@@ -30,11 +25,11 @@ gmp-map{
 }
 
 @keyframes pulse {
-  0% {
+  from {
     transform: scale(0.8);
     opacity: 1;
   }
-  100% {
+  to {
     transform: scale(2);
     opacity: 0;
   }
