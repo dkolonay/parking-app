@@ -29,6 +29,33 @@ gmp-map{
   animation: pulse 1.5s infinite;
 }
 
+.pan-to-user-button{
+  position: absolute;
+  right: 50px;
+  bottom: 50px;
+}
+.pan-to-car-button{
+  position: absolute;
+  right: 50px;
+  bottom: 80px;
+}
+
+.location-button{
+  background-color: rgb(42, 42, 87);
+  color: white;
+  width: 150px;
+  transition: background-color 0.3s ease;
+  border-radius: 5px;
+  padding: 5px 10px;
+  border: none;
+  cursor: pointer;
+}
+
+.location-button:hover{
+  background-color: rgb(71, 71, 133);
+  transition: background-color 0.3s ease;
+}
+
 @keyframes pulse {
   0% {
     transform: scale(0.8);

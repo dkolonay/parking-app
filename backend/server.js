@@ -4,6 +4,8 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 
+const { saveCarLocation, getCarLocation } = require('./db');
+const {verifyToken} = require('./auth')
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -56,35 +58,48 @@ app.get('/api/map/address-from-coords/:coords', async(req, res)=> {
   }
 });
 
-// app.post("/parking", async (req, res) => {
-//   const { latitude, longitude } = req.body;
-//   const userId = req.user.sub; // from Cognito JWT
+// Save car coordinates (requires auth)
+app.post('/api/parking-location', verifyToken, async (req, res) => {
+  console.log("Authenticated user sub:", req.user.sub);
+  console.log("Request body:", req.body);
 
-//   await dynamo.put({
-//     TableName: "UserParking",
-//     Item: {
-//       userId,
-//       latitude,
-//       longitude,
-//       updatedAt: new Date().toISOString()
-//     }
-//   }).promise();
+  try {
+    const { sub } = req.user;
+    const { lat, lng } = req.body;
 
-//   res.sendStatus(200);
-// });
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
+      return res.status(400).json({ error: 'Missing or invalid coordinates' });
+    }
 
-// app.get("/parking", async (req, res) => {
-//   const userId = req.user.sub;
+    const result = await saveCarLocation(sub, lat, lng);
 
-//   const result = await dynamo.get({
-//     TableName: "UserParking",
-//     Key: { userId }
-//   }).promise();
+    res.json({
+      success: true,
+      location: {
+        lat,
+        lng,
+      },
+      timestamp: result.timestamp,
+    });
+  } catch (err) {
+    console.error('Failed to save parking location:', err);
+    res.status(500).json({ error: 'Failed to save location' });
+  }
+});
 
-//   res.json(result.Item || null);
-// });
+// Get all parked cars for logged-in user
+app.get('/api/parking-location', verifyToken, async (req, res) => {
+  try {
+    const { sub } = req.user;
+    const carLocation = await getCarLocation(sub);
+    res.json(carLocation);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to get cars' });
+  }
+});
 
-// Add your other /api/... routes here
+
 
 /**
  * 2. Serve static React build

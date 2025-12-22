@@ -25,6 +25,7 @@ dist-ssr
 
 .aws-sam
 
+template.yaml
 .env
 env.json
 .env.development

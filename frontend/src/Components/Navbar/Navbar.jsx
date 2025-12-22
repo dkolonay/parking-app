@@ -6,10 +6,10 @@ const Navbar = ({ auth }) => {
     if (auth.isAuthenticated) {
       //handle logout
       auth.removeUser()
-      const clientId = "6f6rvbgju63b6kfst332maqli6";
+      const clientId = "6jpto601dlcn61dgf0uh7fsjel";
       const logoutUri = "https://easypark.cis4160.com";
-      const cognitoDomain = "https://us-east-2x2v0zsvp3.auth.us-east-2.amazoncognito.com";
-      window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
+    const cognitoDomain = "https://us-west-2b7f9fvkmx.auth.us-west-2.amazoncognito.com";
+    window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
     } else {
       auth.signinRedirect()
     }

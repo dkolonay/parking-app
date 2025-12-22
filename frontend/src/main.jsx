@@ -5,11 +5,11 @@ import "./index.css";
 import App from "./App.jsx";
 
 const cognitoAuthConfig = {
-  authority: "https://cognito-idp.us-east-2.amazonaws.com/us-east-2_x2v0zsvP3",
-  client_id: "6f6rvbgju63b6kfst332maqli6",
+  authority: "https://cognito-idp.us-west-2.amazonaws.com/us-west-2_b7F9fvKMX",
+  client_id: "6jpto601dlcn61dgf0uh7fsjel",
   redirect_uri: "https://easypark.cis4160.com",
   response_type: "code",
-  scope: "phone openid email",
+  scope: "email openid phone",
 };
 
 createRoot(document.getElementById("root")).render(

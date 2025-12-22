@@ -12,7 +12,7 @@ import VisibleSignsComponent from "../VisibleSigns/VisibleSigns";
 
 const KEY = import.meta.env.VITE_PARK_API_KEY;
 
-const MapComponent = ({ setShowSidebar, setPotentialParkData }) => {
+const MapComponent = ({ setShowSidebar,setSidebarType, setPotentialParkData, parkLocation }) => {
   const [newMarker, setNewMarker] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [signs, setSigns] = useState(new Map());
@@ -54,7 +54,6 @@ const convertToLatLng = (x, y) => {
 
 async function fetchParkingSigns(appToken, whereClause) {
   const url = `https://data.cityofnewyork.us/resource/nfid-uabd.json?$where=${encodeURIComponent(whereClause)}&$limit=5000`;
-  console.log(url)
   const res = await fetch(
     url,
     {
@@ -119,7 +118,6 @@ useEffect(() => {
 
     const neSP = convertLatLngToStatePlane(ne.lat(), ne.lng());
     const swSP = convertLatLngToStatePlane(sw.lat(), sw.lng());
-    console.log((swSP.x).toFixed(3), (neSP.x).toFixed(3), (swSP.y).toFixed(3), (neSP.y).toFixed(3))
 
     const whereClause = `
     sign_x_coord >= ${(swSP.x).toFixed(3)} AND sign_x_coord <= ${(neSP.x).toFixed(3)} AND
@@ -151,6 +149,10 @@ useEffect(() => {
   return () => listeners.forEach(l => l.remove());
 
 }, [map]);
+
+useEffect(()=>{
+  setNewMarker(null)
+}, [parkLocation])
 
 
 
@@ -247,6 +249,7 @@ useEffect(() => {
 
     setPotentialParkData(clickPosition);
     setShowSidebar(true);
+    setSidebarType("potential")
   };
 
   return (
@@ -266,10 +269,24 @@ useEffect(() => {
         <AdvancedMarker
           onClick={() => {
             setShowSidebar(true);
+            setSidebarType("potential")
+            smoothPanAndZoom(map, newMarker, 17, 600)
           }}
           position={newMarker}
         >
-          <CarPin />
+          <CarPin type={'potential'}/>
+        </AdvancedMarker>
+      )}
+      {parkLocation && (
+        <AdvancedMarker
+          onClick={() => {
+            setShowSidebar(true);
+            setSidebarType("confirmed")
+            smoothPanAndZoom(map, parkLocation, 17, 600)
+          }}
+          position={parkLocation}
+        >
+          <CarPin type={'confirmed'}/>
         </AdvancedMarker>
       )}
       {userLocation && (<><AdvancedMarker position={userLocation}>
@@ -283,6 +300,17 @@ useEffect(() => {
         </>)}
 
         <VisibleSignsComponent signs={signs}/>
+      {parkLocation && (
+        <div className={"pan-to-car-button"}>
+          <button className={'location-button'} onClick={()=>{smoothPanAndZoom(map, parkLocation, 17, 600)}}>Where's my car?</button>
+        </div>
+      )}
+
+      {userLocation && (
+        <div className={"pan-to-user-button"}>
+          <button className={'location-button'} onClick={()=>{smoothPanAndZoom(map, userLocation, 17, 600)}}>Show my location</button>
+        </div>
+      )}
         
       
     </GoogleMap>
