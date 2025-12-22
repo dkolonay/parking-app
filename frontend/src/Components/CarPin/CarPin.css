@@ -40,4 +40,6 @@
 .car-image {
   width: 50px;
   transform: translateY(50%);
+  position: relative;
+  z-index: 50;
 }

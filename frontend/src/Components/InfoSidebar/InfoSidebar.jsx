@@ -7,6 +7,7 @@ const InfoSidebar = ({
   parkAddress,
   confirmPark,
   sidebarType,
+  auth,
 }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -39,9 +40,14 @@ const InfoSidebar = ({
 
       <h3>Status:</h3>
       <p>Safe until 9:30am this Thursday (Demo)</p>
-      {sidebarType === "potential" && (
+      {(sidebarType === "potential" && auth.isAuthenticated) && (
         <button className={"submit-park"} onClick={handleSubmit}>
           Park My Car Here
+        </button>
+      )}
+      {(sidebarType === "potential" && !auth.isAuthenticated) && (
+        <button className={"submit-park"} onClick={ ()=>{auth.signinRedirect()}}>
+          Log in to save parking location
         </button>
       )}
 

@@ -16,9 +16,6 @@ const Home = ({ auth }) => {
   const [parkLocation, setParkLocation] = useState(null)
   const [parkAddress, setParkAddress] = useState(null)
 
-  // const getAuthHeaders = ()=>{
-
-  // }
   const getAuthHeaders = ()=>{
     if (auth.isAuthenticated){
       return {Authorization: `Bearer ${auth.user.access_token}`}
@@ -141,7 +138,7 @@ useEffect(()=>{
   return (
     <div className={"page-container"}>
       <Navbar auth={auth} />
-      <InfoSidebar show={showSidebar} sidebarType={sidebarType} closeSidebar={()=>{setShowSidebar(false)}} addressData={addressData} parkAddress={parkAddress} confirmPark={confirmPark}/>
+      <InfoSidebar auth={auth} show={showSidebar} sidebarType={sidebarType} closeSidebar={()=>{setShowSidebar(false)}} addressData={addressData} parkAddress={parkAddress} confirmPark={confirmPark}/>
       <APIProvider apiKey={KEY}>
         <MapComponent setShowSidebar={setShowSidebar} setSidebarType={setSidebarType} setPotentialParkData={setPotentialParkData} parkLocation={parkLocation}/>
       </APIProvider>

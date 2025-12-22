@@ -11,14 +11,13 @@ function VisibleSignsComponent({ signs }) {
     <>
       {visibleSigns.map((sign) => {
         return (
-        <AdvancedMarker key={sign.id} position={sign.coords}>
-  <Sign sign={sign}/>
-</AdvancedMarker>
-      )
-    }
-      )}
+          <AdvancedMarker key={sign.id} position={sign.coords} zIndex={5}>
+            <Sign sign={sign} />
+          </AdvancedMarker>
+        );
+      })}
     </>
   );
 }
 
-export default VisibleSignsComponent
+export default VisibleSignsComponent;
